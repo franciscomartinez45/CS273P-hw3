@@ -76,7 +76,7 @@ def softmax_loss(X: np.ndarray, y: np.ndarray, W: np.ndarray, reg: float = 0.0) 
     Z = X @ W[1:, :] + W[0,:]
     P = softmax(Z)
     log = -np.log(P[np.arange(N), y]+1e-12)
-    loss = np.mean(log) + reg * np.sum(W[1:,:]**2)
+    loss = np.mean(log) + (reg/2) * np.sum(W[1:,:]**2)
     return loss
 
 

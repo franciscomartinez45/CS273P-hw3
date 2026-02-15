@@ -98,7 +98,7 @@ def softmax_grad(X: np.ndarray, y: np.ndarray, W: np.ndarray, reg: float = 0.0) 
 
     grad = np.zeros_like(W)
     grad[0, :] = np.mean(P, axis=0)
-    grad[1:, :] = (X.T @ P) / N+2 * reg * W[1:,:]
+    grad[1:, :] = (X.T @ P) / N + reg * W[1:, :] 
     return grad
 
 

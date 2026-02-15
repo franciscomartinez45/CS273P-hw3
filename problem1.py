@@ -88,7 +88,7 @@ def logistic_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0)
     p = sigmoid(z)
     p = np.clip(p, 1e-15, 1 - 1e-15)
     loss = -np.mean(y * np.log(p)+(1-y)*np.log(1-p))
-    loss += reg * np.sum(w[1:] ** 2)
+    loss += (reg /2)* np.sum(w[1:] ** 2)
     return loss
 
 
@@ -109,7 +109,7 @@ def logistic_grad(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0)
     error = p - y 
     grad = np.zeros_like(w)
     grad[0] = np.mean(error)
-    grad[1:] = (X.T @ error) / n + 2 * reg * w[1:]
+    grad[1:] = (X.T @ error) / n + reg * w[1:]
     return grad 
 
 

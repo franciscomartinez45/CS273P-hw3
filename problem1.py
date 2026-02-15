@@ -27,7 +27,20 @@ def load_iris_binary(path: str) -> Tuple[np.ndarray, np.ndarray]:
         Labels in {0,1}.
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+
+    data = np.genfromtxt(path)
+    X = data[:, :4]
+    y = data [:, 4]
+
+    mask = y <= 1
+    X = X[mask]
+    y = y[mask]
+
+    X = (X - X.mean(axis=0)) / X.std(axis=0)
+    
+    return X,y
+
 
 
 
@@ -40,7 +53,15 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
     s : np.ndarray, same shape as z
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    pos = z >=0
+    # print(pos)
+    s = np.empty_like(z, dtype=float)
+    s[pos] = 1.0 / (1.0 + np.exp(-z[pos]))
+    neg = np.exp(z[~pos])
+    s[~pos] = neg / (1.0 + neg)
+    return s
+
 
 
 def logistic_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0) -> float:
@@ -61,7 +82,14 @@ def logistic_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0)
     loss : float
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    n = X.shape[0]
+    z = w[0] + X @ w[1:]
+    p = sigmoid(z)
+    p = np.clip(p, 1e-15, 1 - 1e-15)
+    loss = -np.mean(y * np.log(p)+(1-y)*np.log(1-p))
+    loss += reg * np.sum(w[1:] ** 2)
+    return loss
 
 
 def logistic_grad(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0) -> np.ndarray:
@@ -73,7 +101,16 @@ def logistic_grad(X: np.ndarray, y: np.ndarray, w: np.ndarray, reg: float = 0.0)
     grad : np.ndarray, shape (d+1,)
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+
+    n = X.shape[0]
+    z = w[0] + X @ w[1:]
+    p = sigmoid(z)
+    error = p - y 
+    grad = np.zeros_like(w)
+    grad[0] = np.mean(error)
+    grad[1:] = (X.T @ error) / n + 2 * reg * w[1:]
+    return grad 
 
 
 def predict_proba(X: np.ndarray, w: np.ndarray) -> np.ndarray:
@@ -85,7 +122,9 @@ def predict_proba(X: np.ndarray, w: np.ndarray) -> np.ndarray:
     p : np.ndarray, shape (N,)
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    return sigmoid(w[0] + X @ w[1:])
+
 
 
 def predict(X: np.ndarray, w: np.ndarray, threshold: float = 0.5) -> np.ndarray:
@@ -97,7 +136,9 @@ def predict(X: np.ndarray, w: np.ndarray, threshold: float = 0.5) -> np.ndarray:
     yhat : np.ndarray, shape (N,)
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    yhat = predict_proba(X,w)
+    return (yhat >= threshold).astype(float)
 
 
 def train_logreg(
@@ -125,7 +166,40 @@ def train_logreg(
       - "epochs": int
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    n, d = X.shape
+    w = np.zeros(d+1)
+    loss_history = []
+    err_history = []
+    rng = np.random.RandomState(seed)
+
+    for epoch in range(max_epochs):
+        if batch_size == 0:
+            grad = logistic_grad(X,y,w,reg)
+            w -= step_size * grad
+        else:
+            idx = np.arange(n)
+            rng.shuffle(idx)
+            for start in range(0, n, batch_size):
+                Xb = X[idx[start:start + batch_size]]
+                yb = y[idx[start:start + batch_size]]
+                grad = logistic_grad(Xb, yb, w, reg)
+                w -= step_size * grad
+        loss = logistic_loss(X,y, w, reg)
+        yhat = predict(X,w)
+        err = np.mean(yhat!=y)
+        loss_history.append(loss)
+        err_history.append(err)
+
+        if epoch > 0 and abs(loss_history[-1] - loss_history[-2]) < tol:
+            break
+
+    return{
+        "w": w,
+        "loss_history": loss_history,
+        "err_history" : err_history,
+        "epochs" : epoch + 1
+    }
 
 
 if __name__ == "__main__":

@@ -33,8 +33,11 @@ def hinge_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, C: float = 1.0) -> f
     loss : float
     """
     # TODO
-    raise NotImplementedError
-
+    # raise NotImplementedError
+    N = X.shape[0]
+    margins = y * (w[0] + X @ w[1:])
+    loss = 0.5 * np.sum(w[1:] ** 2) + C * np.mean(np.maximum (0,1 - margins))
+    return loss
 
 def hinge_grad(X: np.ndarray, y: np.ndarray, w: np.ndarray, C: float = 1.0) -> np.ndarray:
     """
@@ -47,7 +50,15 @@ def hinge_grad(X: np.ndarray, y: np.ndarray, w: np.ndarray, C: float = 1.0) -> n
     grad : np.ndarray, shape (d+1,)
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    N = X.shape[0]
+    margins = y* (w[0] + X @ w[1:])
+    mask = (margins < 1).astype(float)
+
+    grad = np.zeros_like(w)
+    grad[0] = -C * np.mean(mask * y)
+    grad[1:] = w[1:] - C * (X.T @ (mask * y)) /N
+    return grad
 
 
 def predict_svm(X: np.ndarray, w: np.ndarray) -> np.ndarray:
@@ -62,7 +73,11 @@ def predict_svm(X: np.ndarray, w: np.ndarray) -> np.ndarray:
         Entries in {-1, +1}.
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    scores = w[0] + X @ w[1:]
+    yhat = np.where(scores >= 0, 1, -1)
+    return yhat
+
 
 
 def train_svm_hinge(
@@ -90,7 +105,41 @@ def train_svm_hinge(
       - "epochs": int
     """
     # TODO
-    raise NotImplementedError
+    # raise NotImplementedError
+    rng = np.random.RandomState(seed)
+    N, d = X.shape
+    w = np.zeros(d+1)
+    loss_history = []
+    err_history = []
+
+    for epoch in range(max_epochs):
+        if batch_size > 0:
+            index = np.arange(N)
+            rng.shuffle(index)
+            for start in range(0, N, batch_size):
+                mini_b = index[start:start + batch_size]
+                grad = hinge_grad(X[mini_b], y[mini_b], w, C)
+                w -= step_size * grad
+        else:
+            grad = hinge_grad(X, y, w, C)
+            w -= step_size * grad
+
+        loss = hinge_loss(X, y, w, C)
+        yhat = predict_svm(X, w)
+        err = float(np.mean(yhat != y))
+
+        loss_history.append(loss)
+        err_history.append(err)
+
+        if epoch > 0 and abs(loss_history[-1] - loss_history[-2]) < tol:
+            break
+
+    return {
+        "w": w,
+        "loss_history": loss_history,
+        "err_history": err_history,
+        "epochs": epoch + 1,
+    }
 
 
 if __name__ == "__main__":
